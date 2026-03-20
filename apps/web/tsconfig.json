@@ -4,7 +4,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@workspace/ui/*": ["../../packages/ui/src/*"]
+      "@workspace/ui/*": ["../../packages/ui/src/*"],
+      "@workspace/shared/*": ["../../packages/shared/src/*"],
+      "@workspace/database": ["../../packages/database/src/index.ts"],
+      "@workspace/database/*": ["../../packages/database/src/*"]
     },
     "plugins": [
       {
