@@ -15,11 +15,10 @@ export async function POST(
     const session = await requireSession()
     const { siteId } = await params
 
-    const site = await db
+    const [site] = await db
       .select()
       .from(sites)
       .where(and(eq(sites.id, siteId), eq(sites.userId, session.user.id)))
-      .get()
 
     if (!site) {
       return NextResponse.json({ error: "Site not found" }, { status: 404 })
@@ -67,7 +66,7 @@ export async function POST(
         )
 
       // Create deployment record
-      const deployment = await db
+      const [deployment] = await db
         .insert(deployments)
         .values({
           id: deploymentId,
@@ -79,7 +78,6 @@ export async function POST(
           createdAt: new Date(),
         })
         .returning()
-        .get()
 
       // Update site status
       await db

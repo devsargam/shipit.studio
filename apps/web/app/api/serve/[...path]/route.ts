@@ -45,7 +45,7 @@ export async function GET(
 
   if (segments[0] === "_custom" && segments.length >= 2) {
     const customDomain = segments[1]!
-    const site = await db
+    const [site] = await db
       .select()
       .from(sites)
       .where(
@@ -55,11 +55,10 @@ export async function GET(
           eq(sites.status, "active")
         )
       )
-      .get()
 
     if (!site) return notFoundResponse("Site not found for this domain")
 
-    const liveDeployment = await db
+    const [liveDeployment] = await db
       .select()
       .from(deployments)
       .where(
@@ -68,7 +67,6 @@ export async function GET(
           eq(deployments.status, "live")
         )
       )
-      .get()
 
     if (!liveDeployment) return notFoundResponse("No active deployment")
 
@@ -80,15 +78,14 @@ export async function GET(
   const siteName = segments[0]!
   const filePath = segments.slice(1).join("/") || "index.html"
 
-  const site = await db
+  const [site] = await db
     .select()
     .from(sites)
     .where(and(eq(sites.name, siteName), eq(sites.status, "active")))
-    .get()
 
   if (!site) return notFoundResponse("Site not found")
 
-  const liveDeployment = await db
+  const [liveDeployment] = await db
     .select()
     .from(deployments)
     .where(
@@ -97,7 +94,6 @@ export async function GET(
         eq(deployments.status, "live")
       )
     )
-    .get()
 
   if (!liveDeployment) return notFoundResponse("No active deployment")
 

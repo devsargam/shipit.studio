@@ -13,22 +13,20 @@ export async function POST(
     const { siteId } = await params
     const { domain } = (await req.json()) as { domain: string }
 
-    const site = await db
+    const [site] = await db
       .select()
       .from(sites)
       .where(and(eq(sites.id, siteId), eq(sites.userId, session.user.id)))
-      .get()
 
     if (!site) {
       return NextResponse.json({ error: "Site not found" }, { status: 404 })
     }
 
     // Check domain is not already taken by another site
-    const existingDomain = await db
+    const [existingDomain] = await db
       .select()
       .from(sites)
       .where(eq(sites.customDomain, domain))
-      .get()
 
     if (existingDomain && existingDomain.id !== siteId) {
       return NextResponse.json(
@@ -71,11 +69,10 @@ export async function GET(
     const session = await requireSession()
     const { siteId } = await params
 
-    const site = await db
+    const [site] = await db
       .select()
       .from(sites)
       .where(and(eq(sites.id, siteId), eq(sites.userId, session.user.id)))
-      .get()
 
     if (!site || !site.customDomain) {
       return NextResponse.json(

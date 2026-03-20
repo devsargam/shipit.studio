@@ -1,31 +1,31 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core"
+import { pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core"
 
 // ── Better Auth tables ──────────────────────────────────────────────
 
-export const user = sqliteTable("users", {
+export const user = pgTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
-  emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
+  emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
 })
 
-export const session = sqliteTable("sessions", {
+export const session = pgTable("sessions", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   token: text("token").notNull().unique(),
-  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
 })
 
-export const account = sqliteTable("accounts", {
+export const account = pgTable("accounts", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -34,26 +34,26 @@ export const account = sqliteTable("accounts", {
   providerId: text("provider_id").notNull(),
   accessToken: text("access_token"),
   refreshToken: text("refresh_token"),
-  accessTokenExpiresAt: integer("access_token_expires_at", { mode: "timestamp" }),
-  refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp" }),
+  accessTokenExpiresAt: timestamp("access_token_expires_at"),
+  refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
   scope: text("scope"),
   password: text("password"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
 })
 
-export const verification = sqliteTable("verifications", {
+export const verification = pgTable("verifications", {
   id: text("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
-  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-  createdAt: integer("created_at", { mode: "timestamp" }),
-  updatedAt: integer("updated_at", { mode: "timestamp" }),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at"),
+  updatedAt: timestamp("updated_at"),
 })
 
 // ── App tables ──────────────────────────────────────────────────────
 
-export const sites = sqliteTable("sites", {
+export const sites = pgTable("sites", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -61,15 +61,15 @@ export const sites = sqliteTable("sites", {
   name: text("name").notNull().unique(),
   description: text("description"),
   customDomain: text("custom_domain").unique(),
-  domainVerified: integer("domain_verified", { mode: "boolean" }).notNull().default(false),
+  domainVerified: boolean("domain_verified").notNull().default(false),
   status: text("status", { enum: ["active", "inactive", "deploying"] })
     .notNull()
     .default("active"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull(),
 })
 
-export const deployments = sqliteTable("deployments", {
+export const deployments = pgTable("deployments", {
   id: text("id").primaryKey(),
   siteId: text("site_id")
     .notNull()
@@ -80,5 +80,5 @@ export const deployments = sqliteTable("deployments", {
   filePath: text("file_path").notNull(),
   fileCount: integer("file_count").notNull().default(0),
   totalSize: integer("total_size").notNull().default(0),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  createdAt: timestamp("created_at").notNull(),
 })

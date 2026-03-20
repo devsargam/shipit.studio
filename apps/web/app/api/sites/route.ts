@@ -20,11 +20,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if name is taken
-    const existing = await db
+    const [existing] = await db
       .select()
       .from(sites)
       .where(eq(sites.name, name))
-      .get()
     if (existing) {
       return NextResponse.json(
         { error: "This name is already taken" },
@@ -33,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     const now = new Date()
-    const site = await db
+    const [site] = await db
       .insert(sites)
       .values({
         id: nanoid(),
@@ -45,7 +44,6 @@ export async function POST(req: NextRequest) {
         updatedAt: now,
       })
       .returning()
-      .get()
 
     return NextResponse.json(site, { status: 201 })
   } catch (error) {

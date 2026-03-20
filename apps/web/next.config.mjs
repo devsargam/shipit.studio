@@ -2,7 +2,7 @@
 const nextConfig = {
   output: "standalone",
   transpilePackages: ["@workspace/ui", "@workspace/database"],
-  serverExternalPackages: ["better-sqlite3", "adm-zip"],
+  serverExternalPackages: ["adm-zip"],
   allowedDevOrigins: ["*.localhost"],
 }
 

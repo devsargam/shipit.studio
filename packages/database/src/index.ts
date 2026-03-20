@@ -1,14 +1,12 @@
-import Database from "better-sqlite3"
-import { drizzle } from "drizzle-orm/better-sqlite3"
+import { drizzle } from "drizzle-orm/postgres-js"
+import postgres from "postgres"
 import * as schema from "./schema"
 
-const DATABASE_PATH = process.env.DATABASE_PATH || "../../data/db/shipit.db"
+const DATABASE_URL = process.env.DATABASE_URL!
 
-const sqlite = new Database(DATABASE_PATH)
-sqlite.pragma("journal_mode = WAL")
-sqlite.pragma("foreign_keys = ON")
+const client = postgres(DATABASE_URL)
 
-export const db = drizzle(sqlite, { schema })
+export const db = drizzle(client, { schema })
 
 export * from "./schema"
 export { schema }

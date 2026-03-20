@@ -15,11 +15,10 @@ export default async function SiteDetailPage({
   const session = await requireSession()
   const { siteId } = await params
 
-  const site = await db
+  const [site] = await db
     .select()
     .from(sites)
     .where(and(eq(sites.id, siteId), eq(sites.userId, session.user.id)))
-    .get()
 
   if (!site) {
     redirect("/dashboard")

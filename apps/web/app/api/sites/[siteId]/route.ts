@@ -12,11 +12,10 @@ export async function GET(
     const session = await requireSession()
     const { siteId } = await params
 
-    const site = await db
+    const [site] = await db
       .select()
       .from(sites)
       .where(and(eq(sites.id, siteId), eq(sites.userId, session.user.id)))
-      .get()
 
     if (!site) {
       return NextResponse.json({ error: "Site not found" }, { status: 404 })
@@ -48,11 +47,10 @@ export async function DELETE(
     const session = await requireSession()
     const { siteId } = await params
 
-    const site = await db
+    const [site] = await db
       .select()
       .from(sites)
       .where(and(eq(sites.id, siteId), eq(sites.userId, session.user.id)))
-      .get()
 
     if (!site) {
       return NextResponse.json({ error: "Site not found" }, { status: 404 })

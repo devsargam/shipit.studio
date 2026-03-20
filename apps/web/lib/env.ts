@@ -3,7 +3,7 @@ import { z } from "zod"
 const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(1, "BETTER_AUTH_SECRET is required"),
   BETTER_AUTH_URL: z.string().url("BETTER_AUTH_URL must be a valid URL"),
-  DATABASE_PATH: z.string().min(1, "DATABASE_PATH is required"),
+  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   APP_DOMAIN: z.string().min(1, "APP_DOMAIN is required"),
 
   GITHUB_CLIENT_ID: z.string().min(1, "GITHUB_CLIENT_ID is required"),
