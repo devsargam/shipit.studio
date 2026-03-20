@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth-session"
-import { APP_NAME } from "@workspace/shared/constants"
 import Link from "next/link"
 import { UserMenu } from "./user-menu"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -21,7 +20,7 @@ export default async function DashboardLayout({
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="text-lg font-bold">
-              {APP_NAME}
+              Shipit
             </Link>
             <nav className="flex items-center gap-4 text-sm">
               <Link
