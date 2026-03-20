@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { db, sites, deployments } from "@workspace/database"
 import { eq, and, desc } from "drizzle-orm"
 import { requireSession } from "@/lib/auth-session"
