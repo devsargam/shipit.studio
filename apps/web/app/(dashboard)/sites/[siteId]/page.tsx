@@ -1,6 +1,7 @@
 import { db, sites, deployments } from "@workspace/database"
 import { eq, and, desc } from "drizzle-orm"
 import { requireSession } from "@/lib/auth-session"
+import { env } from "@/lib/env"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
@@ -30,7 +31,7 @@ export default async function SiteDetailPage({
     .where(eq(deployments.siteId, siteId))
     .orderBy(desc(deployments.createdAt))
 
-  const domain = process.env.APP_DOMAIN || "localhost:3000"
+  const domain = env.APP_DOMAIN
   const protocol = domain.includes("localhost") ? "http" : "https"
 
   return (

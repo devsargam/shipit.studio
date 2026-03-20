@@ -1,6 +1,7 @@
 import { db, sites } from "@workspace/database"
 import { eq } from "drizzle-orm"
 import { requireSession } from "@/lib/auth-session"
+import { env } from "@/lib/env"
 import Link from "next/link"
 import { Button } from "@workspace/ui/components/button"
 import { Badge } from "@workspace/ui/components/badge"
@@ -14,7 +15,7 @@ export default async function DashboardPage() {
     .where(eq(sites.userId, session.user.id))
     .orderBy(sites.createdAt)
 
-  const domain = process.env.APP_DOMAIN || "localhost:3000"
+  const domain = env.APP_DOMAIN
   const protocol = domain.includes("localhost") ? "http" : "https"
 
   return (
