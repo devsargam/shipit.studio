@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { db, sites, deployments } from "@workspace/database"
 import { eq, and } from "drizzle-orm"
-import { readSiteFile, listFiles } from "@/lib/storage"
+import { readSiteFile, listSiteFiles } from "@/lib/storage"
 
 async function serveSite(
   siteId: string,
@@ -23,7 +23,7 @@ async function serveSite(
 
   // No file found — try directory listing
   const dirPath = filePath === "index.html" ? "" : filePath
-  const files = await listFiles(siteId, deploymentId, dirPath)
+  const files = await listSiteFiles(siteId, deploymentId, dirPath)
 
   if (files.length > 0) {
     return directoryListingResponse(siteName, dirPath, files)

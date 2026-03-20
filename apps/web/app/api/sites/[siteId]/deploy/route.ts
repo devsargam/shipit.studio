@@ -3,7 +3,7 @@ import { db, sites, deployments } from "@workspace/database"
 import { eq, and } from "drizzle-orm"
 import { nanoid } from "nanoid"
 import { requireSession } from "@/lib/auth-session"
-import { extractZip } from "@/lib/storage"
+import { extractAndUploadZip } from "@/lib/storage"
 
 const MAX_UPLOAD_SIZE = 50 * 1024 * 1024 // 50MB
 
@@ -49,7 +49,7 @@ export async function POST(
       .where(eq(sites.id, siteId))
 
     try {
-      const { fileCount, totalSize } = await extractZip(
+      const { fileCount, totalSize } = await extractAndUploadZip(
         buffer,
         siteId,
         deploymentId

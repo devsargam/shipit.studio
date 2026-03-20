@@ -1,45 +1,34 @@
 import AdmZip from "adm-zip"
-import fs from "node:fs/promises"
-import path from "node:path"
 import mimeTypes from "mime-types"
+import { uploadFile, getFile, listObjects, deletePrefix } from "./r2"
 
-const STORAGE_PATH = process.env.SITES_STORAGE_PATH || "../../data/sites"
-
-function getStorageRoot() {
-  return path.resolve(process.cwd(), STORAGE_PATH)
+function getMimeType(fileName: string): string {
+  return mimeTypes.lookup(fileName) || "application/octet-stream"
 }
 
-export function getDeploymentPath(siteId: string, deploymentId: string) {
-  return path.join(getStorageRoot(), siteId, deploymentId)
+function stripCommonPrefix(entries: AdmZip.IZipEntry[]): string {
+  const nonDirEntries = entries.filter((e) => !e.isDirectory)
+  const firstEntry = nonDirEntries[0]
+  if (!firstEntry) return ""
+
+  const parts = firstEntry.entryName.split("/")
+  if (parts.length <= 1) return ""
+
+  const candidate = parts[0] + "/"
+  const allShare = nonDirEntries.every((e) =>
+    e.entryName.startsWith(candidate)
+  )
+  return allShare ? candidate : ""
 }
 
-export async function extractZip(
+export async function extractAndUploadZip(
   buffer: Buffer,
   siteId: string,
   deploymentId: string
 ): Promise<{ fileCount: number; totalSize: number }> {
-  const destPath = getDeploymentPath(siteId, deploymentId)
-  await fs.mkdir(destPath, { recursive: true })
-
   const zip = new AdmZip(buffer)
   const entries = zip.getEntries()
-
-  // Check if all entries share a common root folder
-  const nonDirEntries = entries.filter((e) => !e.isDirectory)
-  const firstEntry = nonDirEntries[0]
-  let commonPrefix = ""
-  if (firstEntry) {
-    const parts = firstEntry.entryName.split("/")
-    if (parts.length > 1) {
-      const candidate = parts[0] + "/"
-      const allSharePrefix = nonDirEntries.every((e) =>
-        e.entryName.startsWith(candidate)
-      )
-      if (allSharePrefix) {
-        commonPrefix = candidate
-      }
-    }
-  }
+  const commonPrefix = stripCommonPrefix(entries)
 
   let fileCount = 0
   let totalSize = 0
@@ -53,14 +42,10 @@ export async function extractZip(
     }
     if (!relativePath) continue
 
-    // Prevent path traversal
-    const resolved = path.resolve(destPath, relativePath)
-    if (!resolved.startsWith(destPath)) {
-      throw new Error("Zip contains path traversal")
-    }
+    const data = entry.getData()
+    const contentType = getMimeType(relativePath)
 
-    await fs.mkdir(path.dirname(resolved), { recursive: true })
-    await fs.writeFile(resolved, entry.getData())
+    await uploadFile(siteId, deploymentId, relativePath, data, contentType)
     fileCount++
     totalSize += entry.header.size
   }
@@ -73,85 +58,83 @@ export async function readSiteFile(
   deploymentId: string,
   filePath: string
 ): Promise<{ data: Buffer; mimeType: string } | null> {
-  const deploymentPath = getDeploymentPath(siteId, deploymentId)
-
-  // Normalize and prevent path traversal
-  const normalized = path.normalize(filePath).replace(/^\/+/, "")
-  const resolved = path.resolve(deploymentPath, normalized)
-  if (!resolved.startsWith(deploymentPath)) {
-    return null
+  // Try exact path
+  const result = await getFile(siteId, deploymentId, filePath)
+  if (result) {
+    return { data: result.data, mimeType: result.contentType }
   }
 
-  // Try the exact path, then path/index.html, then path.html
-  const candidates = [resolved]
-  if (!path.extname(resolved)) {
-    candidates.push(path.join(resolved, "index.html"))
-    candidates.push(resolved + ".html")
+  // Try path/index.html
+  const indexResult = await getFile(siteId, deploymentId, `${filePath}/index.html`)
+  if (indexResult) {
+    return { data: indexResult.data, mimeType: indexResult.contentType }
   }
 
-  for (const candidate of candidates) {
-    try {
-      const stat = await fs.stat(candidate)
-      if (stat.isFile()) {
-        const data = await fs.readFile(candidate)
-        const ext = path.extname(candidate)
-        const mimeType = mimeTypes.lookup(ext) || "application/octet-stream"
-        return { data: Buffer.from(data), mimeType }
-      }
-    } catch {
-      continue
-    }
+  // Try path.html
+  const htmlResult = await getFile(siteId, deploymentId, `${filePath}.html`)
+  if (htmlResult) {
+    return { data: htmlResult.data, mimeType: htmlResult.contentType }
   }
 
   return null
 }
 
-export async function listFiles(
+export async function listSiteFiles(
   siteId: string,
   deploymentId: string,
   dirPath: string = ""
 ): Promise<{ name: string; path: string; size: number; isDirectory: boolean }[]> {
-  const deploymentPath = getDeploymentPath(siteId, deploymentId)
-  const targetPath = dirPath
-    ? path.resolve(deploymentPath, path.normalize(dirPath).replace(/^\/+/, ""))
-    : deploymentPath
+  const prefix = dirPath
+    ? `sites/${siteId}/${deploymentId}/${dirPath}/`
+    : `sites/${siteId}/${deploymentId}/`
 
-  if (!targetPath.startsWith(deploymentPath)) return []
+  const objects = await listObjects(prefix)
 
-  try {
-    const entries = await fs.readdir(targetPath, { withFileTypes: true })
-    const results = await Promise.all(
-      entries.map(async (entry) => {
-        const relativePath = path.join(dirPath, entry.name)
-        const fullPath = path.join(targetPath, entry.name)
-        const stat = await fs.stat(fullPath)
-        return {
-          name: entry.name,
-          path: relativePath,
-          size: stat.size,
-          isDirectory: entry.isDirectory(),
-        }
+  const seen = new Set<string>()
+  const results: { name: string; path: string; size: number; isDirectory: boolean }[] = []
+
+  for (const obj of objects) {
+    // Strip the prefix to get relative path
+    const relative = obj.key.slice(prefix.length)
+    if (!relative) continue
+
+    const parts = relative.split("/")
+    const name = parts[0]!
+
+    // If there are more parts, this is a directory entry
+    if (parts.length > 1) {
+      if (!seen.has(name)) {
+        seen.add(name)
+        results.push({
+          name,
+          path: dirPath ? `${dirPath}/${name}` : name,
+          size: 0,
+          isDirectory: true,
+        })
+      }
+    } else {
+      results.push({
+        name,
+        path: dirPath ? `${dirPath}/${name}` : name,
+        size: obj.size,
+        isDirectory: false,
       })
-    )
-    // Directories first, then alphabetical
-    return results.sort((a, b) => {
-      if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1
-      return a.name.localeCompare(b.name)
-    })
-  } catch {
-    return []
+    }
   }
+
+  return results.sort((a, b) => {
+    if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1
+    return a.name.localeCompare(b.name)
+  })
 }
 
 export async function deleteDeploymentFiles(
   siteId: string,
   deploymentId: string
 ) {
-  const deploymentPath = getDeploymentPath(siteId, deploymentId)
-  await fs.rm(deploymentPath, { recursive: true, force: true })
+  await deletePrefix(`sites/${siteId}/${deploymentId}/`)
 }
 
 export async function deleteSiteFiles(siteId: string) {
-  const sitePath = path.join(getStorageRoot(), siteId)
-  await fs.rm(sitePath, { recursive: true, force: true })
+  await deletePrefix(`sites/${siteId}/`)
 }
