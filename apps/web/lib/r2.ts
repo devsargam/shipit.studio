@@ -7,21 +7,14 @@ import {
 } from "@aws-sdk/client-s3"
 import { env } from "./env"
 
-let _r2: S3Client | null = null
-
-function getR2() {
-  if (!_r2) {
-    _r2 = new S3Client({
-      region: "auto",
-      endpoint: env.R2_ENDPOINT,
-      credentials: {
-        accessKeyId: env.R2_ACCESS_KEY_ID,
-        secretAccessKey: env.R2_SECRET_ACCESS_KEY,
-      },
-    })
-  }
-  return _r2
-}
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: env.R2_ACCESS_KEY_ID,
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+  },
+})
 
 function siteKey(siteId: string, deploymentId: string, filePath: string) {
   return `sites/${siteId}/${deploymentId}/${filePath}`
@@ -35,7 +28,7 @@ export async function uploadFile(
   contentType: string
 ) {
   const key = siteKey(siteId, deploymentId, filePath)
-  await getR2().send(
+  await r2.send(
     new PutObjectCommand({
       Bucket: env.R2_BUCKET,
       Key: key,
@@ -52,7 +45,7 @@ export async function getFile(
 ): Promise<{ data: Buffer; contentType: string } | null> {
   const key = siteKey(siteId, deploymentId, filePath)
   try {
-    const response = await getR2().send(
+    const response = await r2.send(
       new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key })
     )
     const data = Buffer.from(await response.Body!.transformToByteArray())
@@ -71,7 +64,7 @@ export async function listObjects(
   let continuationToken: string | undefined
 
   do {
-    const response = await getR2().send(
+    const response = await r2.send(
       new ListObjectsV2Command({
         Bucket: env.R2_BUCKET,
         Prefix: prefix,
@@ -95,14 +88,13 @@ export async function deletePrefix(prefix: string) {
   const objects = await listObjects(prefix)
   if (objects.length === 0) return
 
-  // S3 DeleteObjects supports max 1000 keys per request
   const batches: { key: string }[][] = []
   for (let i = 0; i < objects.length; i += 1000) {
     batches.push(objects.slice(i, i + 1000))
   }
 
   for (const batch of batches) {
-    await getR2().send(
+    await r2.send(
       new DeleteObjectsCommand({
         Bucket: env.R2_BUCKET,
         Delete: {
