@@ -1,26 +1,33 @@
-import { betterAuth } from "better-auth"
+import { betterAuth, type Auth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { db } from "@workspace/database"
+import { getDb } from "@workspace/database"
 import * as schema from "@workspace/database/schema"
-import { env } from "./env"
+import { getEnv } from "./env"
 
-export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema,
-  }),
-  socialProviders: {
-    github: {
-      clientId: env.GITHUB_CLIENT_ID,
-      clientSecret: env.GITHUB_CLIENT_SECRET,
-    },
-  },
-  session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: 5 * 60,
-    },
-  },
-})
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _auth: any = null
 
-export type Session = typeof auth.$Infer.Session
+export function getAuth(): Auth {
+  if (!_auth) {
+    const env = getEnv()
+    _auth = betterAuth({
+      database: drizzleAdapter(getDb(), {
+        provider: "pg",
+        schema,
+      }),
+      socialProviders: {
+        github: {
+          clientId: env.GITHUB_CLIENT_ID,
+          clientSecret: env.GITHUB_CLIENT_SECRET,
+        },
+      },
+      session: {
+        cookieCache: {
+          enabled: true,
+          maxAge: 5 * 60,
+        },
+      },
+    })
+  }
+  return _auth as Auth
+}
