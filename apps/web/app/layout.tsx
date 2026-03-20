@@ -21,6 +21,13 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var d=document.documentElement,s=localStorage.getItem("shipit.studio"),m=s==="dark"||s==="light"?s:window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";d.classList.toggle("dark",m==="dark");d.style.colorScheme=m}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body>{children}</body>
     </html>
   )
