@@ -7,16 +7,21 @@ import {
 } from "@aws-sdk/client-s3"
 import { env } from "./env"
 
-const r2 = new S3Client({
-  region: "auto",
-  endpoint: env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: env.R2_ACCESS_KEY_ID,
-    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
-  },
-})
+let _r2: S3Client | null = null
 
-const BUCKET = env.R2_BUCKET
+function getR2() {
+  if (!_r2) {
+    _r2 = new S3Client({
+      region: "auto",
+      endpoint: env.R2_ENDPOINT,
+      credentials: {
+        accessKeyId: env.R2_ACCESS_KEY_ID,
+        secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+      },
+    })
+  }
+  return _r2
+}
 
 function siteKey(siteId: string, deploymentId: string, filePath: string) {
   return `sites/${siteId}/${deploymentId}/${filePath}`
@@ -30,9 +35,9 @@ export async function uploadFile(
   contentType: string
 ) {
   const key = siteKey(siteId, deploymentId, filePath)
-  await r2.send(
+  await getR2().send(
     new PutObjectCommand({
-      Bucket: BUCKET,
+      Bucket: env.R2_BUCKET,
       Key: key,
       Body: data,
       ContentType: contentType,
@@ -47,8 +52,8 @@ export async function getFile(
 ): Promise<{ data: Buffer; contentType: string } | null> {
   const key = siteKey(siteId, deploymentId, filePath)
   try {
-    const response = await r2.send(
-      new GetObjectCommand({ Bucket: BUCKET, Key: key })
+    const response = await getR2().send(
+      new GetObjectCommand({ Bucket: env.R2_BUCKET, Key: key })
     )
     const data = Buffer.from(await response.Body!.transformToByteArray())
     const contentType =
@@ -66,9 +71,9 @@ export async function listObjects(
   let continuationToken: string | undefined
 
   do {
-    const response = await r2.send(
+    const response = await getR2().send(
       new ListObjectsV2Command({
-        Bucket: BUCKET,
+        Bucket: env.R2_BUCKET,
         Prefix: prefix,
         ContinuationToken: continuationToken,
       })
@@ -97,9 +102,9 @@ export async function deletePrefix(prefix: string) {
   }
 
   for (const batch of batches) {
-    await r2.send(
+    await getR2().send(
       new DeleteObjectsCommand({
-        Bucket: BUCKET,
+        Bucket: env.R2_BUCKET,
         Delete: {
           Objects: batch.map((o) => ({ Key: o.key })),
         },

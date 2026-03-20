@@ -15,7 +15,13 @@ const envSchema = z.object({
   R2_BUCKET: z.string().min(1, "R2_BUCKET is required"),
 })
 
-function validateEnv() {
+type Env = z.infer<typeof envSchema>
+
+let cached: Env | null = null
+
+export function getEnv(): Env {
+  if (cached) return cached
+
   const result = envSchema.safeParse(process.env)
 
   if (!result.success) {
@@ -26,7 +32,12 @@ function validateEnv() {
     throw new Error(`Missing or invalid environment variables:\n${errors}`)
   }
 
-  return result.data
+  cached = result.data
+  return cached
 }
 
-export const env = validateEnv()
+export const env = new Proxy({} as Env, {
+  get(_, prop: string) {
+    return getEnv()[prop as keyof Env]
+  },
+})
