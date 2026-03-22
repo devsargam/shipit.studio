@@ -51,6 +51,20 @@ export const verification = pgTable("verifications", {
   updatedAt: timestamp("updated_at"),
 })
 
+// ── API Keys ─────────────────────────────────────────────────────────
+
+export const apiKeys = pgTable("api_keys", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  keyHash: text("key_hash").notNull().unique(),
+  prefix: text("prefix").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  lastUsedAt: timestamp("last_used_at"),
+})
+
 // ── App tables ──────────────────────────────────────────────────────
 
 export const sites = pgTable("sites", {
