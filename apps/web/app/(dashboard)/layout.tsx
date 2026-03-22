@@ -29,6 +29,12 @@ export default async function DashboardLayout({
               >
                 Sites
               </Link>
+              <Link
+                href="/settings/api-keys"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Settings
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-2">
