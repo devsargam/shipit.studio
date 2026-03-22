@@ -107,16 +107,17 @@ export default function ApiKeysPage() {
                     Copy this key now. You won&apos;t be able to see it again.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="flex items-center gap-2">
-                  <code className="bg-muted flex-1 truncate rounded px-3 py-2 text-sm">
+                <div className="grid gap-2">
+                  <code className="bg-muted break-all rounded px-3 py-2 text-xs">
                     {createdKey}
                   </code>
-                  <Button variant="outline" size="icon" onClick={copyKey}>
+                  <Button variant="outline" size="sm" onClick={copyKey}>
                     {copied ? (
-                      <Check className="h-4 w-4" />
+                      <Check className="mr-2 h-3 w-3" />
                     ) : (
-                      <Copy className="h-4 w-4" />
+                      <Copy className="mr-2 h-3 w-3" />
                     )}
+                    {copied ? "Copied" : "Copy to clipboard"}
                   </Button>
                 </div>
                 <DialogFooter>
