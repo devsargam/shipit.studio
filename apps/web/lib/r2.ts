@@ -4,6 +4,7 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
   DeleteObjectsCommand,
+  DeleteObjectCommand,
 } from "@aws-sdk/client-s3"
 import { env } from "./env"
 
@@ -82,6 +83,15 @@ export async function listObjects(
   } while (continuationToken)
 
   return results
+}
+
+export async function deleteObject(key: string) {
+  await r2.send(
+    new DeleteObjectCommand({
+      Bucket: env.R2_BUCKET,
+      Key: key,
+    })
+  )
 }
 
 export async function deletePrefix(prefix: string) {
